@@ -260,14 +260,15 @@ class Certificate(_CertificateBase):
             else:
                 sec_cert_ref = self.sec_certificate_ref
 
-            if osx_version_info < (10, 14):
-                sec_public_key_ref_pointer = new(Security, 'SecKeyRef *')
+            sec_public_key_ref_pointer = new(Security, 'SecKeyRef *')
+            if osx_version_info >= (10, 14):
+                sec_public_key_ref = Security.SecCertificateCopyKey(sec_cert_ref)
+                if is_null(sec_public_key_ref):
+                    raise ValueError('Unable to extract public key from certificate')
+            else:
                 res = Security.SecCertificateCopyPublicKey(sec_cert_ref, sec_public_key_ref_pointer)
                 handle_sec_error(res)
                 sec_public_key_ref = unwrap(sec_public_key_ref_pointer)
-            else:
-                sec_public_key_ref = Security.SecCertificateCopyKey(sec_cert_ref)
-
             self._public_key = PublicKey(sec_public_key_ref, self.asn1['tbs_certificate']['subject_public_key_info'])
 
         return self._public_key
